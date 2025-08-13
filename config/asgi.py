@@ -8,7 +8,9 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 """
 
 import os
-from channels.routing import ProtocolTypeRouter
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from chat.routing import websocket_urlpatterns
 
 from django.core.asgi import get_asgi_application
 
@@ -18,6 +20,11 @@ application = get_asgi_application()
 
 application = ProtocolTypeRouter(
     {
-        'http': application
+        'http': application,
+        'websocket': AuthMiddlewareStack(
+            URLRouter(
+                websocket_urlpatterns
+            )
+        ),
     }
 )

@@ -201,5 +201,21 @@ LOGGING = {
 # static files #
 ################
 
-STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = "/static/"
+
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",  # 静的ファイルを置いているディレクトリ
+# ]
+
+STATIC_ROOT = BASE_DIR / 'static'
+
+
+############
+# Channels #
+############
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}

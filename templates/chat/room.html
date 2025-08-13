@@ -1,32 +1,113 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}
-    Chat Room - {{ room_name }}
+  Chat room for "{{ room_name }}"
 {% endblock %}
 
 {% block content %}
-<div class="chat-container">
-	<div class="chat-header">
-		<h2>Chat Room: {{ room_name }}</h2>
-		<p>Welcome, {{ username }}!</p>
-	</div>
-    <div class="chat-messages"></div>
-
-    <div class="chat-input-container">
-        <input
-            id="message" 
-            type="text"
-            placeholder="Type your message..."
-            class="message-input">
-        <button type="submit">
-            <i class="fas fa-paper-plane">Send</i>
-        </button>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>💬 {{ room_name }}</h2>
+      <p>Welcome, {{ username }}!</p>
     </div>
-</div>
+    <div id="chat" class="chat-messages"></div>
+
+    <div id="chat-input" class="chat-input-container">
+      <input
+        id="chat-message-input"
+        type="text"
+        placeholder="Type your message..."
+        class="message-input"
+      >
+      <button id="chat-message-submit" class="send-button">
+        <i class="fas fa-location-arrow"></i>
+      </button>
+    </div>
+  </div>
 {% endblock %}
 
 {% block include_js %}
+  {{ room_name|json_script:"room_name" }}
+  {{ username|json_script:"username" }}
 {% endblock %}
 
 {% block domready %}
+  // Get room name and username from HTML
+  const room_name = JSON.parse(document.getElementById('room_name').textContent);
+  const username = JSON.parse(document.getElementById('username').textContent);
+
+  // Determine correct protocol (wss for https, ws for http)
+  const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+  const url = protocol + window.location.host + '/ws/room/' + room_name + '/' + username + '/';
+
+  // Create WebSocket
+  const chatSocket = new WebSocket(url);
+
+  // DOM elements
+  const input = document.getElementById('chat-message-input');
+  const submitButton = document.getElementById('chat-message-submit');
+
+  // Disable send button until connection is ready
+  submitButton.disabled = true;
+  submitButton.title = "Connecting...";
+
+  // On WebSocket open
+  chatSocket.onopen = function() {
+    console.log("✅ WebSocket connected");
+    submitButton.disabled = false;
+    submitButton.title = "Send message";
+    input.focus();
+  };
+
+  // On receiving message
+  chatSocket.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    const chat = document.getElementById('chat');
+
+    const dateOptions = {hour: 'numeric', minute: 'numeric'};
+    const datetime = new Date(data.datetime).toLocaleString('en', dateOptions);
+
+    const isMe = data.user === username;
+    const source = isMe ? 'message me' : 'message other';
+    const name = isMe ? 'Me' : data.user;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${source} message-new`;
+    messageDiv.innerHTML = '<strong>' + name + '</strong>' +
+                          '<span class="date">' + datetime + '</span><br>' + data.message;
+
+    chat.appendChild(messageDiv);
+    chat.scrollTop = chat.scrollHeight;
+
+    setTimeout(() => {
+        messageDiv.classList.remove('message-new');
+    }, 300);
+  };
+
+  // On WebSocket close
+  chatSocket.onclose = function(event) {
+    console.error('❌ Chat socket closed unexpectedly');
+    submitButton.disabled = true;
+    submitButton.title = "Connection closed";
+  };
+
+  // Send button click
+  submitButton.addEventListener('click', function(event) {
+    const message = input.value.trim();
+    if (message && chatSocket.readyState === WebSocket.OPEN) {
+      chatSocket.send(JSON.stringify({'message': message}));
+      input.value = '';
+      input.focus();
+    } else {
+      console.warn("Cannot send message: WebSocket not open");
+    }
+  });
+
+  // Send on Enter key
+  input.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitButton.click();
+    }
+  });
 {% endblock %}
