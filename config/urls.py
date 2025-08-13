@@ -16,11 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('sample/', include('sample.urls')),  # Include the sample app URLs
     path('chat/', include('chat.urls')),  # Include the chat app URLs
-] + debug_toolbar_urls()
+]
