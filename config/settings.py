@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',  # Custom user app
+    'chat.apps.ChatConfig',  # Chat app
 ]
 
 MIDDLEWARE = [
