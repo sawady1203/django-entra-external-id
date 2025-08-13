@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Chat Rooms{% endblock %}
+
+{% block content %}
+<div class="join-container">
+    <div class="join-card">
+        <div class="join-header">
+            <h2>Join a Chat Room</h2>
+        </div>
+        <div class="join-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="room_name">Room Name</label>
+                    <input type="text" id="room_name" name="room_name" required>
+                    <div class="invalid-feedback">
+                        Please enter a room name.
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="username">Your Name</label>
+                    <input type="text" id="username" name="username" required>
+                    <div class="invalid-feedback">
+                        Please enter your name.
+                    </div>
+                </div>
+                <div class="form-submit">
+                    <button type="submit" class="join-button">Join Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -34,6 +34,7 @@ ALLOWED_HOSTS = [".vercel.app"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'mozilla_django_oidc',  # Load after auth
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',  # Custom user app
+    'chat.apps.ChatConfig',  # Chat app
 ]
 
 MIDDLEWARE = [
@@ -75,6 +77,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -198,5 +201,21 @@ LOGGING = {
 # static files #
 ################
 
-STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = "/static/"
+
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",  # 静的ファイルを置いているディレクトリ
+# ]
+
+STATIC_ROOT = BASE_DIR / 'static'
+
+
+############
+# Channels #
+############
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
