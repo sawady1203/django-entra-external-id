@@ -203,11 +203,11 @@ LOGGING = {
 
 STATIC_URL = "/static/"
 
-# STATICFILES_DIRS = [
-#     BASE_DIR / "static",  # 静的ファイルを置いているディレクトリ
-# ]
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  # 静的ファイルを置いているディレクトリ
+]
 
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 ############
