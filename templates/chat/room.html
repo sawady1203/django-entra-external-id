@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Chat Room - {{ room_name }}
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+	<div class="chat-header">
+		<h2>Chat Room: {{ room_name }}</h2>
+		<p>Welcome, {{ username }}!</p>
+	</div>
+    <div class="chat-messages"></div>
+
+    <div class="chat-input-container">
+        <input
+            id="message" 
+            type="text"
+            placeholder="Type your message..."
+            class="message-input">
+        <button type="submit">
+            <i class="fas fa-paper-plane">Send</i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block include_js %}
+{% endblock %}
+
+{% block domready %}
+{% endblock %}
