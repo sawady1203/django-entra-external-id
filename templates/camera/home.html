@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Home</title>
+</head>
+<body>
+  <h1>Camera Home Page</h1>
+  <p>ログイン済みユーザーのみアクセス可能です。</p>
+  {% if user.is_authenticated %}
+  <form action="{% url 'oidc_logout' %}" method="post">
+    {% csrf_token %}
+    <input type="submit" value="logout">
+  </form>
+
+  <!-- 撮影ボタン -->
+  <form method="POST" action="{% url 'camera:take_picture' %}">
+    {% csrf_token %}
+    <button type="submit">写真を撮る</button>
+  </form>
+
+  {% else %}
+  <a href="{% url 'oidc_authentication_init' %}">Login</a>
+{% endif %}
+
+</body>
+</html>

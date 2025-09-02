@@ -23,4 +23,5 @@ urlpatterns = [
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('sample/', include('sample.urls')),  # Include the sample app URLs
     path('chat/', include('chat.urls')),  # Include the chat app URLs
+    path('camera/', include('camera.urls')),  # Include the camera app URLs
 ] + debug_toolbar_urls()
