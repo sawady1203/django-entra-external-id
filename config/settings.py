@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',  # Custom user app
     'chat.apps.ChatConfig',  # Chat app
+    'camera.apps.CameraConfig',  # Camera app
 ]
 
 MIDDLEWARE = [
