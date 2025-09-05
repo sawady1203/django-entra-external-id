@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',  # Custom user app
     'chat.apps.ChatConfig',  # Chat app
+    'camera.apps.CameraConfig',  # Camera app
 ]
 
 MIDDLEWARE = [
@@ -156,6 +157,7 @@ OIDC_RP_CLIENT_SECRET = os.getenv('OIDC_RP_CLIENT_SECRET')
 OIDC_OP_AUTHORIZATION_ENDPOINT = os.getenv('OIDC_OP_AUTHORIZATION_ENDPOINT')
 OIDC_OP_TOKEN_ENDPOINT = os.getenv('OIDC_OP_TOKEN_ENDPOINT')
 OIDC_OP_USER_ENDPOINT = os.getenv('OIDC_OP_USER_ENDPOINT')
+LOGIN_URL = os.getenv('LOGIN_URL')
 LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL')
 LOGOUT_REDIRECT_URL = os.getenv('LOGOUT_REDIRECT_URL')
 OIDC_RP_SIGN_ALGO = os.getenv('OIDC_RP_SIGN_ALGO')
