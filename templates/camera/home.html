@@ -7,6 +7,7 @@
 <body>
   <h1>Camera Home Page</h1>
   <p>ログイン済みユーザーのみアクセス可能です。</p>
+
   {% if user.is_authenticated %}
   <form action="{% url 'oidc_logout' %}" method="post">
     {% csrf_token %}
@@ -14,14 +15,40 @@
   </form>
 
   <!-- 撮影ボタン -->
-  <form method="POST" action="{% url 'camera:take_picture' %}">
-    {% csrf_token %}
-    <button type="submit">写真を撮る</button>
-  </form>
+  <button id="take-photo">写真を撮る</button>
 
+  <!-- 最新の写真を表示する場所 -->
+  <div id="latest-photo"></div>
+
+  <script>
+    document.getElementById("take-photo").addEventListener("click", async () => {
+      let res = await fetch("{% url 'camera:take_picture' %}", {
+        method: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}" }
+      });
+      let data = await res.json();
+      console.log("撮影リクエスト:", data);
+    });
+
+    // photoアプリのSSEを購読し、新しい写真があれば表示
+    const evtSource = new EventSource("{% url 'photo:photo_stream' %}");
+
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      console.log("New photo:", data);
+
+      // 例: 最新写真だけ表示
+      const img = document.createElement("img");
+      img.src = `/photo/media/${data.photo_id}/`;
+      img.width = 400;
+
+      const container = document.getElementById("latest-photo");
+      container.innerHTML = "";  // 前の写真を消す
+      container.appendChild(img);
+};
+  </script>
   {% else %}
-  <a href="{% url 'oidc_authentication_init' %}">Login</a>
-{% endif %}
-
+    <a href="{% url 'oidc_authentication_init' %}">Login</a>
+  {% endif %}
 </body>
 </html>

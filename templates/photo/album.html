@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>My Album</title>
+</head>
+<body>
+  <h1>アルバム</h1>
+  <div id="photo-list"></div>
+
+  <script>
+    async function loadPhotos() {
+      let res = await fetch("/photo/api/list/");
+      let photos = await res.json();
+
+      let container = document.getElementById("photo-list");
+      container.innerHTML = "";
+      photos.forEach(p => {
+        let img = document.createElement("img");
+        img.src = `/photo/api/serve/${p.id}/`;
+        img.style.maxWidth = "200px";
+        img.style.margin = "5px";
+        container.appendChild(img);
+      });
+    }
+
+    loadPhotos();
+  </script>
+</body>
+</html>

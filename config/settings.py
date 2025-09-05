@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',  # Custom user app
     'chat.apps.ChatConfig',  # Chat app
     'camera.apps.CameraConfig',  # Camera app
+    'photo.apps.PhotoConfig',  # Photo app
 ]
 
 MIDDLEWARE = [
