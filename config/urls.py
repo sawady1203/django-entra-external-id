@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +24,4 @@ urlpatterns = [
     path('chat/', include('chat.urls')),  # Include the chat app URLs
     path('camera/', include('camera.urls')),  # Include the camera app URLs
     path('photo/', include('photo.urls')),  # Include the photo app URLs
-] + debug_toolbar_urls()
+]
