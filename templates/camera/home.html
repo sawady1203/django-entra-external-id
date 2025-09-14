@@ -30,22 +30,6 @@
       console.log("撮影リクエスト:", data);
     });
 
-    // photoアプリのSSEを購読し、新しい写真があれば表示
-    const evtSource = new EventSource("{% url 'photo:photo_stream' %}");
-
-    evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
-      console.log("New photo:", data);
-
-      // 例: 最新写真だけ表示
-      const img = document.createElement("img");
-      img.src = `/photo/media/${data.photo_id}/`;
-      img.width = 400;
-
-      const container = document.getElementById("latest-photo");
-      container.innerHTML = "";  // 前の写真を消す
-      container.appendChild(img);
-};
   </script>
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
