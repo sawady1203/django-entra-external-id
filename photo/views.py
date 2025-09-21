@@ -1,3 +1,4 @@
+import os
 import json
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponseForbidden, FileResponse
@@ -5,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
+from google.oauth2 import service_account
 from google.cloud import storage
 
 from .models import Photo
@@ -70,6 +72,10 @@ def photo_serve(request):
     # 所有者チェック
     if photo.owner != request.user:
         return HttpResponseForbidden("You do not have permission to access this photo.")
+
+    sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+    credentials = service_account.Credentials.from_service_account_info(json.loads(sa_json))
+    client = storage.Client(credentials=credentials)
 
     # GCS から読み込み
     client = storage.Client()
