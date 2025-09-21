@@ -11,9 +11,23 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 import sys
+import json
+import tempfile
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv()
+
+# GCSの認証情報を環境変数から取得する処理を追加
+gcs_sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+if gcs_sa_json:
+    # JSON文字列 → dict
+    sa_dict = json.loads(gcs_sa_json)
+    # 一時ファイルに書き出す
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.write(json.dumps(sa_dict).encode("utf-8"))
+    tmp.flush()
+    # GOOGLE_APPLICATION_CREDENTIALS にセット
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
