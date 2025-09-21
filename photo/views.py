@@ -87,3 +87,18 @@ def photo_serve(request):
     response = FileResponse(stream, content_type=photo.content_type)
     # response["Content-Length"] = photo.size
     return response
+
+
+@login_required
+def latest_photo_api(request):
+    """
+    ログインユーザーの最新1件の Photo を返す
+    """
+    photo = Photo.objects.filter(owner=request.user).order_by("-uploaded_at").first()
+    if not photo:
+        return JsonResponse({"error": "no photo"}, status=404)
+
+    return JsonResponse({
+        "gcs_id": photo.gcs_id,
+        "uploaded_at": photo.uploaded_at.timestamp(),
+    })

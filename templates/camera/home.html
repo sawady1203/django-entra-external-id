@@ -18,10 +18,9 @@
 
   <div id="latest-photo">
     {% if latest_photo %}
-      <h2>最新の写真</h2>
-      <img id="latest-img"
-           src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
-           alt="Latest photo" width="400">
+    <img id="latest-img"
+        src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
+        alt="Latest photo" width="400">
     {% else %}
       <p>まだ写真がありません</p>
     {% endif %}
@@ -32,55 +31,46 @@
   <script>
     document.getElementById("take-photo").addEventListener("click", async () => {
       const loadingDiv = document.getElementById("loading");
-      loadingDiv.style.display = "block";
+      const img = document.getElementById("latest-img");
       let count = 0;
-      loadingDiv.textContent = `撮影リクエスト送信中...`;
+      loadingDiv.style.display = "block";
+      loadingDiv.textContent = "撮影リクエスト送信中...";
 
       try {
+        // 撮影リクエスト送信
         let res = await fetch("{% url 'camera:take_picture' %}", {
           method: "POST",
           headers: { "X-CSRFToken": "{{ csrf_token }}" }
         });
 
         if (!res.ok) {
-          loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
+          loadingDiv.textContent = "撮影リクエスト失敗: " + res.statusText;
           return;
         }
 
-        let data;
-        try {
-          data = await res.json();
-        } catch (e) {
-          loadingDiv.textContent = "レスポンスが不正です。HTMLが返っている可能性があります";
-          return;
-        }
-
-        if (data.status !== "success") {
-          loadingDiv.textContent = "撮影失敗: " + (data.message || "unknown error");
-          return;
-        }
-
-        // 撮影依頼成功 → リロード待機表示
-        loadingDiv.textContent = "撮影成功。画像反映まで少し待っています...";
-
-        // カウント表示して数秒後に最新画像を更新
-        const img = document.getElementById("latest-img");
-        let interval = setInterval(() => {
+        // 撮影依頼成功 → 最新画像取得開始
+        loadingDiv.textContent = "撮影成功。最新画像取得中...";
+        
+        // 取得試行
+        const interval = setInterval(async () => {
           count++;
-          loadingDiv.textContent = `撮影成功。画像取得中... ${count}s`;
-        }, 1000);
+          loadingDiv.textContent = `最新画像取得中... ${count}s`;
 
-        // 5秒後に画像を更新
-        setTimeout(() => {
-          clearInterval(interval);
-          if (img) {
-            const baseSrc = "{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}";
-            img.src = baseSrc + "&t=" + new Date().getTime();
-          } else {
-            location.reload();
+          try {
+            const latestRes = await fetch("{% url 'photo:latest_photo_api' %}");
+            if (!latestRes.ok) return;
+
+            const latestData = await latestRes.json();
+            if (latestData.gcs_id) {
+              clearInterval(interval);
+              img.src = "{% url 'photo:photo_serve' %}?id=" + latestData.gcs_id + "&t=" + new Date().getTime();
+              loadingDiv.style.display = "none";
+            }
+          } catch (e) {
+            console.log("最新画像取得エラー", e);
           }
-          loadingDiv.style.display = "none";
-        }, 5000);
+
+        }, 1000); // 1秒ごとに最新画像確認
 
       } catch (err) {
         loadingDiv.textContent = "エラーが発生しました: " + err.message;
