@@ -1,6 +1,6 @@
+import uuid
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 
 class Photo(models.Model):
     owner = models.ForeignKey(
@@ -13,6 +13,7 @@ class Photo(models.Model):
         max_length=1024, 
         default="",
         help_text="GCSオブジェクトのフルパス (例: gs://bucket/name)")
+    gcs_id = models.CharField(max_length=128, unique=True, default=uuid.uuid4, editable=False)
     size = models.BigIntegerField(default=0, help_text="ファイルサイズ (バイト)")
     content_type = models.CharField(max_length=100, default="image/jpeg", help_text="MIMEタイプ (例: image/jpeg)")
     uploaded_at = models.DateTimeField(auto_now_add=True)

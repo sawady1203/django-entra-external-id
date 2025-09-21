@@ -14,43 +14,74 @@
     <input type="submit" value="logout">
   </form>
 
-  <!-- 撮影ボタン -->
   <button id="take-photo">写真を撮る</button>
 
-  <!-- 最新の写真を表示する場所 -->
   <div id="latest-photo">
     {% if latest_photo %}
       <h2>最新の写真</h2>
-      <img src="{% url 'photo:photo_serve_by_id' latest_photo.id %}?t={{ latest_photo.id }}" alt="Latest photo" style="max-width: 500px; max-height: 1000px;">
+      <img id="latest-img"
+           src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
+           alt="Latest photo" width="400">
     {% else %}
       <p>まだ写真がありません</p>
     {% endif %}
   </div>
 
-  <!-- ローディング表示領域 -->
   <div id="loading" style="display:none; margin-top:20px; font-weight:bold; color:blue;"></div>
 
   <script>
     document.getElementById("take-photo").addEventListener("click", async () => {
       const loadingDiv = document.getElementById("loading");
       loadingDiv.style.display = "block";
-      loadingDiv.textContent = "撮影リクエストを送信中...";
+      let count = 0;
+      loadingDiv.textContent = `撮影リクエスト送信中...`;
 
       try {
         let res = await fetch("{% url 'camera:take_picture' %}", {
           method: "POST",
           headers: { "X-CSRFToken": "{{ csrf_token }}" }
         });
-        let data = await res.json();
-        console.log("撮影リクエスト:", data);
 
-        if (res.ok && data.status === "success") {
-          loadingDiv.textContent = "写真を保存しました。リロードします...";
-          // Cloud Function が保存完了を返したので即リロード
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          loadingDiv.textContent = "撮影に失敗しました: " + (data.error || "unknown error");
+        if (!res.ok) {
+          loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
+          return;
         }
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          loadingDiv.textContent = "レスポンスが不正です。HTMLが返っている可能性があります";
+          return;
+        }
+
+        if (data.status !== "success") {
+          loadingDiv.textContent = "撮影失敗: " + (data.message || "unknown error");
+          return;
+        }
+
+        // 撮影依頼成功 → リロード待機表示
+        loadingDiv.textContent = "撮影成功。画像反映まで少し待っています...";
+
+        // カウント表示して数秒後に最新画像を更新
+        const img = document.getElementById("latest-img");
+        let interval = setInterval(() => {
+          count++;
+          loadingDiv.textContent = `撮影成功。画像取得中... ${count}s`;
+        }, 1000);
+
+        // 5秒後に画像を更新
+        setTimeout(() => {
+          clearInterval(interval);
+          if (img) {
+            const baseSrc = "{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}";
+            img.src = baseSrc + "&t=" + new Date().getTime();
+          } else {
+            location.reload();
+          }
+          loadingDiv.style.display = "none";
+        }, 5000);
+
       } catch (err) {
         loadingDiv.textContent = "エラーが発生しました: " + err.message;
       }
