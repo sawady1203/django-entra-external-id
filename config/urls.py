@@ -23,4 +23,5 @@ urlpatterns = [
     path('sample/', include('sample.urls')),  # Include the sample app URLs
     path('chat/', include('chat.urls')),  # Include the chat app URLs
     path('camera/', include('camera.urls')),  # Include the camera app URLs
+    path('photo/', include('photo.urls')),  # Include the photo app URLs
 ]

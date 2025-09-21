@@ -17,26 +17,44 @@
   <!-- 撮影ボタン -->
   <button id="take-photo">写真を撮る</button>
 
-  <!-- 最新の写真を表示する場n所 -->
+  <!-- 最新の写真を表示する場所 -->
   <div id="latest-photo">
     {% if latest_photo %}
       <h2>最新の写真</h2>
-      <img src="{% url 'photo:photo_serve' latest_photo.id %}?t={{ latest_photo.id }}" alt="Latest photo" width="400">
+      <img src="{% url 'photo:photo_serve_by_id' latest_photo.id %}?t={{ latest_photo.id }}" alt="Latest photo" style="max-width: 500px; max-height: 1000px;">
     {% else %}
       <p>まだ写真がありません</p>
     {% endif %}
   </div>
 
+  <!-- ローディング表示領域 -->
+  <div id="loading" style="display:none; margin-top:20px; font-weight:bold; color:blue;"></div>
+
   <script>
     document.getElementById("take-photo").addEventListener("click", async () => {
-      let res = await fetch("{% url 'camera:take_picture' %}", {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" }
-      });
-      let data = await res.json();
-      console.log("撮影リクエスト:", data);
-    });
+      const loadingDiv = document.getElementById("loading");
+      loadingDiv.style.display = "block";
+      loadingDiv.textContent = "撮影リクエストを送信中...";
 
+      try {
+        let res = await fetch("{% url 'camera:take_picture' %}", {
+          method: "POST",
+          headers: { "X-CSRFToken": "{{ csrf_token }}" }
+        });
+        let data = await res.json();
+        console.log("撮影リクエスト:", data);
+
+        if (res.ok && data.status === "success") {
+          loadingDiv.textContent = "写真を保存しました。リロードします...";
+          // Cloud Function が保存完了を返したので即リロード
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          loadingDiv.textContent = "撮影に失敗しました: " + (data.error || "unknown error");
+        }
+      } catch (err) {
+        loadingDiv.textContent = "エラーが発生しました: " + err.message;
+      }
+    });
   </script>
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
