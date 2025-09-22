@@ -8,7 +8,6 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
 from google.oauth2 import service_account
 from google.cloud import storage
-
 from .models import Photo
 
 User = get_user_model()
@@ -18,7 +17,7 @@ User = get_user_model()
 def photo_api(request):
     """
     Cloud Function からPOSTされる写真メタデータを受け取り、Photoを作成。
-    最新画像を更新する際に gcs_id を返す。
+    gcs_id を即レスポンスに返す。
     """
     try:
         data = json.loads(request.body)
@@ -71,34 +70,15 @@ def photo_serve(request):
 
     # 所有者チェック
     if photo.owner != request.user:
-        return HttpResponseForbidden("You do not have permission to access this photo.")
+        return HttpResponseForbidden("Permission denied")
 
     sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
     credentials = service_account.Credentials.from_service_account_info(json.loads(sa_json))
     client = storage.Client(credentials=credentials)
 
-    # GCS から読み込み
-    client = storage.Client()
     bucket_name, blob_name = photo.gcs_path.replace("gs://", "").split("/", 1)
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     stream = blob.open("rb")
 
-    response = FileResponse(stream, content_type=photo.content_type)
-    # response["Content-Length"] = photo.size
-    return response
-
-
-@login_required
-def latest_photo_api(request):
-    """
-    ログインユーザーの最新1件の Photo を返す
-    """
-    photo = Photo.objects.filter(owner=request.user).order_by("-uploaded_at").first()
-    if not photo:
-        return JsonResponse({"error": "no photo"}, status=404)
-
-    return JsonResponse({
-        "gcs_id": photo.gcs_id,
-        "uploaded_at": photo.uploaded_at.timestamp(),
-    })
+    return FileResponse(stream, content_type=photo.content_type)

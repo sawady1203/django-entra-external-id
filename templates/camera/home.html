@@ -53,13 +53,14 @@
         return;
       }
 
-      // 取得した gcs_id で即更新
+      // gcs_id を受け取ったら即画像更新
       if (img) {
         img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
       } else {
-        // img タグが存在しない場合はページリロード
+        // img タグがない場合はページをリロードして表示
         location.reload();
       }
+
       loadingDiv.style.display = "none";
 
     } catch (err) {
