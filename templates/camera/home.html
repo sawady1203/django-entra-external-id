@@ -65,7 +65,7 @@
       const interval = setInterval(() => {
         count++;
         loadingDiv.textContent = `撮影成功。画像反映まで ${count} 秒`;
-      }, 1000);
+      }, 5000);
 
       // Cloud Function のレスポンスを受け取ったら即画像更新
       const updateImg = () => {
