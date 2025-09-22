@@ -32,14 +32,28 @@
   document.getElementById("take-photo").addEventListener("click", async () => {
     const loadingDiv = document.getElementById("loading");
     const img = document.getElementById("latest-img");
+
+    if (!img) {
+      console.warn("最新画像の <img> が見つかりません");
+      return;
+    }
+
     loadingDiv.style.display = "block";
-    loadingDiv.textContent = "撮影リクエスト中...";
+    let count = 0;
+    loadingDiv.textContent = "撮影リクエスト送信中...";
 
     try {
+      // 撮影リクエスト送信
       const res = await fetch("{% url 'camera:take_picture' %}", {
         method: "POST",
         headers: { "X-CSRFToken": "{{ csrf_token }}" }
       });
+
+      if (!res.ok) {
+        loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
+        return;
+      }
+
       const data = await res.json();
 
       if (data.status !== "success") {
@@ -47,17 +61,33 @@
         return;
       }
 
-      // gcs_id を受け取って即更新
-      const gcs_id = data.gcs_id;
-      const timestamp = new Date().getTime();
-      img.src = "{% url 'photo:photo_serve' %}?id=" + gcs_id + "&t=" + timestamp;
-      loadingDiv.style.display = "none";
+      // 撮影成功 → カウント表示
+      const interval = setInterval(() => {
+        count++;
+        loadingDiv.textContent = `撮影成功。画像反映まで ${count} 秒`;
+      }, 1000);
+
+      // Cloud Function のレスポンスを受け取ったら即画像更新
+      const updateImg = () => {
+        clearInterval(interval);
+        if (data.gcs_id) {
+          const baseSrc = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id;
+          img.src = baseSrc + "&t=" + new Date().getTime(); // キャッシュ回避
+          loadingDiv.style.display = "none";
+        } else {
+          loadingDiv.textContent = "最新画像情報が取得できませんでした";
+        }
+      };
+
+      // 少し待機して最新 Photo レコードが作成されるのを待つ
+      setTimeout(updateImg, 1000); // 1秒後に更新
 
     } catch (err) {
-      loadingDiv.textContent = "エラー: " + err.message;
+      loadingDiv.textContent = "エラーが発生しました: " + err.message;
     }
   });
   </script>
+
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}
