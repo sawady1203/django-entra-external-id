@@ -24,7 +24,7 @@ def camera_home(request):
     return render(request, "camera/home.html", {"latest_photo": latest_photo})
 
 
-PHOTO_CREATION_WAIT_SECONDS = int(os.environ.get("PHOTO_CREATION_WAIT_SECONDS", 2))
+PHOTO_CREATION_WAIT_SECONDS = int(os.environ.get("PHOTO_CREATION_WAIT_SECONDS", 4))
 
 @login_required
 @csrf_exempt
