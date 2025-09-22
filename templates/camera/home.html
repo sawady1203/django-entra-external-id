@@ -53,34 +53,32 @@
         return;
       }
 
-      // 4秒待機して画像反映
+      // 撮影から画像更新までの経過時間カウント
       let seconds = 0;
-      const waitSeconds = 4;
-      loadingDiv.textContent = `画像反映まで ${seconds} 秒`;
+      loadingDiv.textContent = `処理中: ${seconds} 秒`;
 
       const interval = setInterval(() => {
         seconds++;
-        if (seconds <= waitSeconds) {
-          loadingDiv.textContent = `画像反映まで ${seconds} 秒`;
-        } else {
-          clearInterval(interval);
-
-          if (img) {
-            img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
-          } else {
-            location.reload();
-          }
-          loadingDiv.style.display = "none";
-        }
+        loadingDiv.textContent = `処理中: ${seconds} 秒`;
       }, 1000);
+
+      // Cloud Function 実行 → GCS → Django によるPhoto作成 → ブラウザ更新
+      setTimeout(() => {
+        clearInterval(interval);
+        if (img) {
+          img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
+        } else {
+          location.reload();
+        }
+        loadingDiv.style.display = "none";
+      }, 3000); // ここは現状の経験値3秒、調整可
 
     } catch (err) {
       loadingDiv.textContent = "エラーが発生しました: " + err.message;
     }
-  });  
-</script>
-
-{% else %}
+  });
+  </script>
+  {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}
 </body>
