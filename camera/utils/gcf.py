@@ -23,4 +23,9 @@ def invoke_take_picture_function(user, group_id='group_id'):
     headers = {"Authorization": f"Bearer {credentials.token}"}
     response = requests.post(url, headers=headers, json=payload)
 
-    return response.text, response.status_code
+    try:
+        data = response.json()
+    except:
+        data = {"status": "error", "message": response.text}
+
+    return data

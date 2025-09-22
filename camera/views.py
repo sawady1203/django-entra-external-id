@@ -25,18 +25,14 @@ def camera_home(request):
 @login_required
 @csrf_exempt
 def take_picture(request):
-    """
-    撮影依頼を送信する Ajax 用ビュー
-    JSON でレスポンスを返す
-    """
     if request.method != "POST":
         return JsonResponse({"status": "error", "message": "invalid method"}, status=400)
 
     try:
-        text, status_code = invoke_take_picture_function(request.user)
+        data = invoke_take_picture_function(request.user)
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     # Cloud Function が GCS 保存後にレスポンスを返す想定
     # Ajax からは JSON を返す
-    return JsonResponse({"status": "success", "message": text})
+    return JsonResponse({"status": "success", "message": data["message"]})

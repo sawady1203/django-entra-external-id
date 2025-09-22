@@ -32,62 +32,32 @@
   document.getElementById("take-photo").addEventListener("click", async () => {
     const loadingDiv = document.getElementById("loading");
     const img = document.getElementById("latest-img");
-
-    if (!img) {
-      console.warn("最新画像の <img> が見つかりません");
-      return;
-    }
-
     loadingDiv.style.display = "block";
-    let count = 0;
-    loadingDiv.textContent = "撮影リクエスト送信中...";
+    loadingDiv.textContent = "撮影リクエスト中...";
 
     try {
-      // Cloud Function へ撮影依頼
       const res = await fetch("{% url 'camera:take_picture' %}", {
         method: "POST",
         headers: { "X-CSRFToken": "{{ csrf_token }}" }
       });
-
-      if (!res.ok) {
-        loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
-        return;
-      }
-
-      // レスポンスを JSON として取得（Cloud Function 側で JSON 返却する前提）
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        loadingDiv.textContent = "レスポンスが不正です。HTMLが返っている可能性があります";
-        return;
-      }
+      const data = await res.json();
 
       if (data.status !== "success") {
         loadingDiv.textContent = "撮影失敗: " + (data.message || "unknown error");
         return;
       }
 
-      // 撮影成功 → カウント表示
-      const interval = setInterval(() => {
-        count++;
-        loadingDiv.textContent = `撮影成功。画像反映まで ${count} 秒`;
-      }, 1000);
-
-      // Cloud Function のレスポンスを受け取ったら即更新
-      setTimeout(() => {
-        clearInterval(interval);
-        const baseSrc = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id;
-        img.src = baseSrc + "&t=" + new Date().getTime(); // キャッシュ回避
-        loadingDiv.style.display = "none";
-      }, 1000); // ほぼ即更新、必要なら 0 にしてもOK
+      // gcs_id を受け取って即更新
+      const gcs_id = data.gcs_id;
+      const timestamp = new Date().getTime();
+      img.src = "{% url 'photo:photo_serve' %}?id=" + gcs_id + "&t=" + timestamp;
+      loadingDiv.style.display = "none";
 
     } catch (err) {
-      loadingDiv.textContent = "エラーが発生しました: " + err.message;
+      loadingDiv.textContent = "エラー: " + err.message;
     }
   });
   </script>
-
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}
