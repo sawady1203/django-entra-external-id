@@ -18,9 +18,9 @@
 
   <div id="latest-photo">
     {% if latest_photo %}
-    <img id="latest-img"
-        src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
-        alt="Latest photo" width="400">
+      <img id="latest-img"
+           src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
+           alt="Latest photo" width="400">
     {% else %}
       <p>まだ写真がありません</p>
     {% endif %}
@@ -32,62 +32,41 @@
   document.getElementById("take-photo").addEventListener("click", async () => {
     const loadingDiv = document.getElementById("loading");
     const img = document.getElementById("latest-img");
-
-    if (!img) {
-      console.warn("最新画像の <img> が見つかりません");
-      return;
-    }
-
     loadingDiv.style.display = "block";
-    let count = 0;
     loadingDiv.textContent = "撮影リクエスト送信中...";
 
     try {
-      // 撮影リクエスト送信
       const res = await fetch("{% url 'camera:take_picture' %}", {
         method: "POST",
         headers: { "X-CSRFToken": "{{ csrf_token }}" }
       });
 
       if (!res.ok) {
-        loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
+        loadingDiv.textContent = "撮影リクエスト失敗: " + res.statusText;
         return;
       }
 
       const data = await res.json();
 
-      if (data.status !== "success") {
-        loadingDiv.textContent = "撮影失敗: " + (data.message || "unknown error");
+      if (data.status !== "success" || !data.gcs_id) {
+        loadingDiv.textContent = "撮影失敗: " + (data.message || "gcs_id が返ってきません");
         return;
       }
 
-      // 撮影成功 → カウント表示
-      const interval = setInterval(() => {
-        count++;
-        loadingDiv.textContent = `撮影成功。画像反映まで ${count} 秒`;
-      }, 5000);
-
-      // Cloud Function のレスポンスを受け取ったら即画像更新
-      const updateImg = () => {
-        clearInterval(interval);
-        if (data.gcs_id) {
-          const baseSrc = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id;
-          img.src = baseSrc + "&t=" + new Date().getTime(); // キャッシュ回避
-          loadingDiv.style.display = "none";
-        } else {
-          loadingDiv.textContent = "最新画像情報が取得できませんでした";
-        }
-      };
-
-      // 少し待機して最新 Photo レコードが作成されるのを待つ
-      setTimeout(updateImg, 1000); // 1秒後に更新
+      // 取得した gcs_id で即更新
+      if (img) {
+        img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
+      } else {
+        // img タグが存在しない場合はページリロード
+        location.reload();
+      }
+      loadingDiv.style.display = "none";
 
     } catch (err) {
       loadingDiv.textContent = "エラーが発生しました: " + err.message;
     }
   });
   </script>
-
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}

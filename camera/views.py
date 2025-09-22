@@ -26,8 +26,7 @@ def camera_home(request):
 @csrf_exempt
 def take_picture(request):
     """
-    撮影依頼を送信する Ajax 用ビュー
-    JSON でレスポンスを返す
+    撮影依頼を送信し、Cloud Function のレスポンス (gcs_id) をそのまま返す
     """
     if request.method != "POST":
         return JsonResponse({"status": "error", "message": "invalid method"}, status=400)
@@ -37,23 +36,5 @@ def take_picture(request):
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-    # Cloud Function が GCS に保存したあとに Django API (photo_api) が Photo レコードを作成する想定
-    # 最新 Photo を取得して gcs_id を返す
-    from photo.models import Photo
-    import time
-
-    latest_photo = None
-    for _ in range(10):  # 最大 10 回リトライ（GCS → Django の Photo 作成待ち）
-        latest_photo = Photo.objects.filter(owner=request.user).order_by("-uploaded_at").first()
-        if latest_photo:
-            break
-        time.sleep(0.5)  # 500ms 待つ
-
-    if not latest_photo:
-        return JsonResponse({"status": "error", "message": "最新画像情報が取得できませんでした"})
-
-    return JsonResponse({
-        "status": "success",
-        "gcs_id": latest_photo.gcs_id,
-        "message": "撮影完了"
-    })
+    # Cloud Function から gcs_id が返ってくる前提
+    return JsonResponse(data)
