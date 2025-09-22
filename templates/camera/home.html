@@ -29,54 +29,65 @@
   <div id="loading" style="display:none; margin-top:20px; font-weight:bold; color:blue;"></div>
 
   <script>
-    document.getElementById("take-photo").addEventListener("click", async () => {
-      const loadingDiv = document.getElementById("loading");
-      const img = document.getElementById("latest-img");
-      let count = 0;
-      loadingDiv.style.display = "block";
-      loadingDiv.textContent = "撮影リクエスト送信中...";
+  document.getElementById("take-photo").addEventListener("click", async () => {
+    const loadingDiv = document.getElementById("loading");
+    const img = document.getElementById("latest-img");
 
-      try {
-        // 撮影リクエスト送信
-        let res = await fetch("{% url 'camera:take_picture' %}", {
-          method: "POST",
-          headers: { "X-CSRFToken": "{{ csrf_token }}" }
-        });
+    if (!img) {
+      console.warn("最新画像の <img> が見つかりません");
+      return;
+    }
 
-        if (!res.ok) {
-          loadingDiv.textContent = "撮影リクエスト失敗: " + res.statusText;
-          return;
-        }
+    loadingDiv.style.display = "block";
+    let count = 0;
+    loadingDiv.textContent = "撮影リクエスト送信中...";
 
-        // 撮影依頼成功 → 最新画像取得開始
-        loadingDiv.textContent = "撮影成功。最新画像取得中...";
-        
-        // 取得試行
-        const interval = setInterval(async () => {
-          count++;
-          loadingDiv.textContent = `最新画像取得中... ${count}s`;
+    try {
+      // Cloud Function へ撮影依頼
+      const res = await fetch("{% url 'camera:take_picture' %}", {
+        method: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}" }
+      });
 
-          try {
-            const latestRes = await fetch("{% url 'photo:latest_photo_api' %}");
-            if (!latestRes.ok) return;
-
-            const latestData = await latestRes.json();
-            if (latestData.gcs_id) {
-              clearInterval(interval);
-              img.src = "{% url 'photo:photo_serve' %}?id=" + latestData.gcs_id + "&t=" + new Date().getTime();
-              loadingDiv.style.display = "none";
-            }
-          } catch (e) {
-            console.log("最新画像取得エラー", e);
-          }
-
-        }, 1000); // 1秒ごとに最新画像確認
-
-      } catch (err) {
-        loadingDiv.textContent = "エラーが発生しました: " + err.message;
+      if (!res.ok) {
+        loadingDiv.textContent = "撮影リクエストに失敗しました: " + res.statusText;
+        return;
       }
-    });
+
+      // レスポンスを JSON として取得（Cloud Function 側で JSON 返却する前提）
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        loadingDiv.textContent = "レスポンスが不正です。HTMLが返っている可能性があります";
+        return;
+      }
+
+      if (data.status !== "success") {
+        loadingDiv.textContent = "撮影失敗: " + (data.message || "unknown error");
+        return;
+      }
+
+      // 撮影成功 → カウント表示
+      const interval = setInterval(() => {
+        count++;
+        loadingDiv.textContent = `撮影成功。画像反映まで ${count} 秒`;
+      }, 1000);
+
+      // Cloud Function のレスポンスを受け取ったら即更新
+      setTimeout(() => {
+        clearInterval(interval);
+        const baseSrc = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id;
+        img.src = baseSrc + "&t=" + new Date().getTime(); // キャッシュ回避
+        loadingDiv.style.display = "none";
+      }, 1000); // ほぼ即更新、必要なら 0 にしてもOK
+
+    } catch (err) {
+      loadingDiv.textContent = "エラーが発生しました: " + err.message;
+    }
+  });
   </script>
+
   {% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}
