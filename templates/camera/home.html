@@ -2,84 +2,90 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Camera Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>撮影カウントダウン</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #f8f9fa;
+    }
+    #countdown {
+      font-size: 3rem;
+      font-weight: bold;
+    }
+    #photo-container img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
-<body>
-  <h1>Camera Home Page</h1>
-  <p>ログイン済みユーザーのみアクセス可能です。</p>
+<body class="d-flex flex-column align-items-center justify-content-center vh-100">
+  <div class="container text-center">
+    <h1 class="mb-4">📸 写真撮影</h1>
+    <p id="status-text" class="lead">「撮影開始」を押してください</p>
+    
+    <div id="countdown" class="text-primary my-3"></div>
 
-  {% if user.is_authenticated %}
-  <form action="{% url 'oidc_logout' %}" method="post">
-    {% csrf_token %}
-    <input type="submit" value="logout">
-  </form>
+    <button id="start-btn" class="btn btn-lg btn-primary mb-4">
+      撮影開始
+    </button>
 
-  <button id="take-photo">写真を撮る</button>
-
-  <div id="latest-photo">
-    {% if latest_photo %}
-      <img id="latest-img"
-          src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
-          alt="Latest photo" width="400">
-    {% else %}
-      <p>まだ写真がありません</p>
-    {% endif %}
+    <div id="photo-container" class="mt-4">
+      <img id="latest-photo" src="" alt="撮影された写真" class="d-none img-fluid">
+    </div>
   </div>
 
-  <div id="loading" style="display:none; margin-top:20px; font-weight:bold; color:blue;"></div>
-
   <script>
-  document.getElementById("take-photo").addEventListener("click", async () => {
-    const loadingDiv = document.getElementById("loading");
-    const img = document.getElementById("latest-img");
-    loadingDiv.style.display = "block";
-    loadingDiv.textContent = "撮影リクエスト送信中...";
+    const startBtn = document.getElementById("start-btn");
+    const countdownEl = document.getElementById("countdown");
+    const statusText = document.getElementById("status-text");
+    const photo = document.getElementById("latest-photo");
 
-    try {
-      const res = await fetch("{% url 'camera:take_picture' %}", {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" }
-      });
+    startBtn.addEventListener("click", async () => {
+      startBtn.disabled = true;
+      statusText.textContent = "撮影準備中...";
+      
+      let counter = 4;
+      countdownEl.textContent = counter;
 
-      if (!res.ok) {
-        loadingDiv.textContent = "撮影リクエスト失敗: " + res.statusText;
-        return;
-      }
-
-      const data = await res.json();
-
-      if (data.status !== "success" || !data.gcs_id) {
-        loadingDiv.textContent = "撮影失敗: " + (data.message || "gcs_id が返ってきません");
-        return;
-      }
-
-      // 撮影から画像更新までの経過時間カウント
-      let seconds = 0;
-      loadingDiv.textContent = `処理中: ${seconds} 秒`;
-
-      const interval = setInterval(() => {
-        seconds++;
-        loadingDiv.textContent = `処理中: ${seconds} 秒`;
+      const timer = setInterval(() => {
+        counter--;
+        if (counter > 0) {
+          countdownEl.textContent = counter;
+        } else {
+          clearInterval(timer);
+          countdownEl.textContent = "";
+          statusText.textContent = "写真を取得中...";
+          fetchLatestPhoto();
+        }
       }, 1000);
 
-      // Cloud Function 実行 → GCS → Django によるPhoto作成 → ブラウザ更新
-      setTimeout(() => {
-        clearInterval(interval);
-        if (img) {
-          img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
-        } else {
-          location.reload();
-        }
-        loadingDiv.style.display = "none";
-      }, 3000); // ここは現状の経験値3秒、調整可
+      // Django API へ撮影リクエスト送信
+      await fetch("/camera/api/take-picture/", { method: "POST" });
+    });
 
-    } catch (err) {
-      loadingDiv.textContent = "エラーが発生しました: " + err.message;
+    async function fetchLatestPhoto() {
+      try {
+        const resp = await fetch("/photo/serve/latest/");
+        if (!resp.ok) throw new Error("写真取得エラー");
+        const data = await resp.json();
+
+        if (!data.url) throw new Error("URLが返ってきません");
+
+        // ここで Django 経由の serve URL を使う
+        photo.src = data.url + "&t=" + new Date().getTime(); // キャッシュ回避
+        photo.classList.remove("d-none");
+        statusText.textContent = "最新の写真を表示しました ✅";
+        } catch (e) {
+          console.error(e);
+          statusText.textContent = "写真を取得できませんでした ❌";
+        } finally {
+          startBtn.disabled = false;
+        }
     }
-  });
+
   </script>
-  {% else %}
-    <a href="{% url 'oidc_authentication_init' %}">Login</a>
-  {% endif %}
 </body>
+
 </html>

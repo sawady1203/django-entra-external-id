@@ -1,6 +1,7 @@
 import os
 import json
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.http import JsonResponse, HttpResponseForbidden, FileResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -82,3 +83,22 @@ def photo_serve(request):
     stream = blob.open("rb")
 
     return FileResponse(stream, content_type=photo.content_type)
+
+
+@login_required
+def latest_photo_api(request):
+    """
+    ログインユーザーの最新1件の Photo を返す
+    """
+    photo = Photo.objects.filter(owner=request.user).order_by("-uploaded_at").first()
+    if not photo:
+        return JsonResponse({"error": "no photo"}, status=404)
+
+    # Django の /photo/serve/?id=... を組み立て
+    serve_url = reverse("photo:photo_serve") + f"?id={photo.gcs_id}"
+
+    return JsonResponse({
+        "gcs_id": photo.gcs_id,
+        "uploaded_at": photo.uploaded_at.timestamp(),
+        "url": serve_url,
+    })
