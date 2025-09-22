@@ -19,8 +19,8 @@
   <div id="latest-photo">
     {% if latest_photo %}
       <img id="latest-img"
-           src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
-           alt="Latest photo" width="400">
+          src="{% url 'photo:photo_serve' %}?id={{ latest_photo.gcs_id }}&t={{ latest_photo.uploaded_at.timestamp }}"
+          alt="Latest photo" width="400">
     {% else %}
       <p>まだ写真がありません</p>
     {% endif %}
@@ -53,14 +53,12 @@
         return;
       }
 
-      // gcs_id を受け取ったら即画像更新
+      // 取得した gcs_id で即更新
       if (img) {
         img.src = "{% url 'photo:photo_serve' %}?id=" + data.gcs_id + "&t=" + new Date().getTime();
       } else {
-        // img タグがない場合はページをリロードして表示
-        location.reload();
+        location.reload();  // img タグが無ければリロード
       }
-
       loadingDiv.style.display = "none";
 
     } catch (err) {
@@ -68,7 +66,8 @@
     }
   });
   </script>
-  {% else %}
+
+{% else %}
     <a href="{% url 'oidc_authentication_init' %}">Login</a>
   {% endif %}
 </body>
